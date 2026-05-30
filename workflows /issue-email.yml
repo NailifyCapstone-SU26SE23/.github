@@ -1,0 +1,37 @@
+name: Send email on new issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  send_email:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get issue data
+      uses: actions/github-script@v6
+      id: get
+      with:
+        script: |
+          const issue = context.payload.issue;
+          core.setOutput('title', issue.title);
+          core.setOutput('body', issue.body);
+          core.setOutput('author', issue.user.login);
+
+    - name: Send mail (SMTP)
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.SMTP_USER }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "📢 New Issue: ${{ steps.get.outputs.title }}"
+        body: |
+          A new issue has been opened by @${{ steps.get.outputs.author }}!
+
+          📌 Title: ${{ steps.get.outputs.title }}
+          
+          📝 Body:
+          ${{ steps.get.outputs.body }}
+        to: ${{ secrets.NOTIFY_TO }}
+        from: "Nailify Auto-Notifier <${{ secrets.SMTP_USER }}>"
